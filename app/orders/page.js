@@ -1,33 +1,125 @@
-import Navbar from '@/components/Navbar'
-import React from 'react'
+'use client';
+import Navbar from '@/components/Navbar';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const Orders = () => {
+    const [orderItems, setOrderItems] = useState([]);
+    const [stats, setStats] = useState({
+        totalOrders: 0,
+        pendingOrders: 0,
+        shippedOrders: 0,
+        cancelledOrders: 0,
+    });
+    const [error, setError] = useState(null);
+
+    // Fetch vendor's order items and calculate stats
+    useEffect(() => {
+        const fetchOrderItems = async () => {
+            try {
+                const token = localStorage.getItem('accessToken');
+                if (!token) throw new Error('Please log in');
+                const response = await axios.get('http://localhost:8000/api/vendor/orders/', {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                console.log('Fetched order items:', response.data);
+                setOrderItems(response.data);
+
+                // Calculate stats
+                const uniqueOrderIds = [...new Set(response.data.map(item => item.order_id))];
+                const pending = response.data.filter(item => item.order_status === 'pending').length;
+                const shipped = response.data.filter(item => item.order_status === 'shipped').length;
+                const cancelled = response.data.filter(item => item.order_status === 'cancelled').length;
+                setStats({
+                    totalOrders: uniqueOrderIds.length,
+                    pendingOrders: pending,
+                    shippedOrders: shipped,
+                    cancelledOrders: cancelled,
+                });
+            } catch (err) {
+                const errorMsg = err.response?.data?.detail || err.message;
+                console.error('Fetch error:', err.response?.data);
+                setError(errorMsg);
+            }
+        };
+        fetchOrderItems();
+    }, []);
+
+    // Handle cancel order
+    const handleCancel = async (orderId) => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) throw new Error('Please log in');
+            console.log(`Sending POST to /api/shop/vendor/orders/${orderId}/cancel/`);
+            await axios.post(`http://localhost:8000/api/vendor/orders/${orderId}/cancel/`, {}, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            setOrderItems(orderItems.map(item =>
+                item.order_id === orderId ? { ...item, order_status: 'cancelled' } : item
+            ));
+            setStats(prev => ({
+                ...prev,
+                pendingOrders: prev.pendingOrders - orderItems.filter(item => item.order_id === orderId && item.order_status === 'pending').length,
+                cancelledOrders: prev.cancelledOrders + orderItems.filter(item => item.order_id === orderId).length,
+            }));
+            setError(null);
+        } catch (err) {
+            console.error('Cancel error:', err.response?.data);
+            setError(err.response?.data?.detail || err.message);
+        }
+    };
+
+    // Handle view order details
+    const handleView = (orderId) => {
+        const items = orderItems.filter(item => item.order_id === orderId);
+        const details = items.map(item => 
+            `Product: ${item.product_name}, SKU: ${item.product_sku}, Quantity: ${item.quantity}, Price: ₹${item.price}`
+        ).join('\n');
+        alert(`Order #${orderId}\nCustomer: ${items[0]?.customer_name || 'Unknown'}\nDate: ${items[0] ? new Date(items[0].order_date).toLocaleDateString() : '-'}\nStatus: ${items[0]?.order_status || '-'}\n\nItems:\n${details}`);
+    };
+
+    // Group order items by order_id for table display
+    const groupedOrders = [];
+    const seenOrderIds = new Set();
+    for (const item of orderItems) {
+        if (!seenOrderIds.has(item.order_id)) {
+            seenOrderIds.add(item.order_id);
+            const itemsForOrder  = orderItems.filter(i => i.order_id === item.order_id);
+            const total = itemsForOrder .reduce((sum, i) => sum + (i.price * i.quantity), 0);
+            groupedOrders.push({
+                order_id: item.order_id,
+                customer_name: item.customer_name,
+                order_date: item.order_date,
+                order_status: item.order_status,
+                total,
+            });
+        }
+    }
+
     return (
         <>
             <div className="the-container flex bg-[linear-gradient(120deg,_#5e17eb,_#5f18eb66)]">
-
                 <Navbar />
-
                 <main className='flex-grow p-8 text-gray-800'>
-
                     <h2 className="text-2xl text-white font-semibold mb-6">Order Summary</h2>
+                    {error && <p className="text-red-500 mb-4">{JSON.stringify(error)}</p>}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
                         <div className="card bg-white rounded-lg shadow p-6 flex flex-col items-center">
                             <h3 className="text-lg font-semibold mb-2">Total Orders</h3>
-                            <p id="total-orders" className="text-2xl font-bold text-blue-600">0</p>
+                            <p id="total-orders" className="text-2xl font-bold text-blue-600">{stats.totalOrders}</p>
                         </div>
                         <div className="card bg-white rounded-lg shadow p-6 flex flex-col items-center">
                             <h3 className="text-lg font-semibold mb-2">Pending</h3>
-                            <p id="pending-orders" className="text-2xl font-bold text-yellow-600">0 Orders</p>
+                            <p id="pending-orders" className="text-2xl font-bold text-yellow-600">{stats.pendingOrders} Orders</p>
                         </div>
                         <div className="card bg-white rounded-lg shadow p-6 flex flex-col items-center">
                             <h3 className="text-lg font-semibold mb-2">Shipped</h3>
-                            <p id="shipped-orders" className="text-2xl font-bold text-green-600">0 Orders</p>
+                            <p id="shipped-orders" className="text-2xl font-bold text-green-600">{stats.shippedOrders} Orders</p>
                         </div>
                         <div className="card bg-white rounded-lg shadow p-6 flex flex-col items-center">
                             <h3 className="text-lg font-semibold mb-2">Cancelled</h3>
-                            <p id="cancelled-orders" className="text-2xl font-bold text-red-600">0 Orders</p>
+                            <p id="cancelled-orders" className="text-2xl font-bold text-red-600">{stats.cancelledOrders} Orders</p>
                         </div>
                     </div>
 
@@ -45,69 +137,59 @@ const Orders = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr className="border-b border-gray-200 last:border-0 bg-black/70 backdrop-blur-sm transition duration-300 ease-in-out transform hover:scale-[1.01] hover:bg-black/60">
-                                    <td className="py-2 px-4 text-white">#ORD-1001</td>
-                                    <td className="py-2 px-4 text-white">Priya Sharma</td>
-                                    <td className="py-2 px-4 text-white">Apr 20, 2025</td>
-                                    <td className="py-2 px-4 text-white">
-                                        <span className="status in-stock inline-block px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">
-                                            Shipped
-                                        </span>
-                                    </td>
-                                    <td className="py-2 px-4 text-white">₹3,499</td>
-                                    <td className="py-2 px-4 text-white">
-                                        <button className="edit bg-blue-600 text-white px-3 py-1 rounded mr-2 hover:bg-blue-700 transition">
-                                            View
-                                        </button>
-                                        <button className="delete bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition">
-                                            Cancel
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr className="border-b border-gray-200 last:border-0 bg-black/70 backdrop-blur-sm transition duration-300 ease-in-out transform hover:scale-[1.01] hover:bg-black/60">
-                                    <td className="py-2 px-4 text-white">#ORD-1002</td>
-                                    <td className="py-2 px-4 text-white">Rahul Verma</td>
-                                    <td className="py-2 px-4 text-white">Apr 21, 2025</td>
-                                    <td className="py-2 px-4 text-white">
-                                        <span className="status out-of-stock inline-block px-2 py-1 rounded bg-yellow-100 text-yellow-700 text-xs font-semibold">
-                                            Pending
-                                        </span>
-                                    </td>
-                                    <td className="py-2 px-4 text-white">₹2,299</td>
-                                    <td className="py-2 px-4 text-white">
-                                        <button className="edit bg-blue-600 text-white px-3 py-1 rounded mr-2 hover:bg-blue-700 transition">
-                                            View
-                                        </button>
-                                        <button className="delete bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition">
-                                            Cancel
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr className='border-b border-gray-200 last:border-0 bg-black/70 backdrop-blur-sm transition duration-300 ease-in-out transform hover:scale-[1.01] hover:bg-black/60'>
-                                    <td className="py-2 px-4 text-white">#ORD-1003</td>
-                                    <td className="py-2 px-4 text-white">Sneha Rathore</td>
-                                    <td className="py-2 px-4 text-white">Apr 22, 2025</td>
-                                    <td className="py-2 px-4 text-white">
-                                        <span className="status inactive inline-block px-2 py-1 rounded bg-gray-200 text-gray-700 text-xs font-semibold">
-                                            Cancelled
-                                        </span>
-                                    </td>
-                                    <td className="py-2 px-4 text-white">₹1,499</td>
-                                    <td className="py-2 px-4 text-white">
-                                        <button className="edit bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition">
-                                            View
-                                        </button>
-                                    </td>
-                                </tr>
-                                {/* Add more orders as needed */}
+                                {groupedOrders.length > 0 ? (
+                                    groupedOrders.map((order) => (
+                                        <tr
+                                            key={order.order_id}
+                                            className="border-b border-gray-200 last:border-0 bg-black/70 backdrop-blur-sm transition duration-300 ease-in-out transform hover:scale-[1.01] hover:bg-black/60"
+                                        >
+                                            <td className="py-2 px-4 text-white">#{order.order_id}</td>
+                                            <td className="py-2 px-4 text-white">{order.customer_name || 'Unknown'}</td>
+                                            <td className="py-2 px-4 text-white">{new Date(order.order_date).toLocaleDateString()}</td>
+                                            <td className="py-2 px-4 text-white">
+                                                <span
+                                                    className={`status inline-block px-2 py-1 rounded text-xs font-semibold ${
+                                                        order.order_status === 'shipped'
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : order.order_status === 'pending'
+                                                            ? 'bg-yellow-100 text-yellow-700'
+                                                            : 'bg-gray-200 text-gray-700'
+                                                    }`}
+                                                >
+                                                    {order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1)}
+                                                </span>
+                                            </td>
+                                            <td className="py-2 px-4 text-white">₹{order.total.toFixed(2)}</td>
+                                            <td className="py-2 px-4 text-white">
+                                                <button
+                                                    onClick={() => handleView(order.order_id)}
+                                                    className="edit bg-blue-600 text-white px-3 py-1 rounded mr-2 hover:bg-blue-700 transition"
+                                                >
+                                                    View
+                                                </button>
+                                                {order.order_status === 'Pending' && (
+                                                    <button
+                                                        onClick={() => handleCancel(order.order_id)}
+                                                        className="delete bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="py-2 px-4 text-white text-center">No orders found.</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </main>
             </div>
-
         </>
-    )
-}
+    );
+};
 
-export default Orders
+export default Orders;
