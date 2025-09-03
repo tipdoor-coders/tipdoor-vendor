@@ -3,7 +3,7 @@ import Navbar from '@/components/Navbar';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const home = () => {
+const Home = () => {
     const [products, setProducts] = useState([]);
     const [error, setError] = useState(null);
 
@@ -124,4 +124,4 @@ const home = () => {
     );
 };
 
-export default home;
+export default Home;

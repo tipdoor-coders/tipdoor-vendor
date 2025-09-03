@@ -150,7 +150,7 @@ export default function Login() {
                     </button>
 
                     <div className="text-center text-sm text-gray-600 mt-4">
-                        Don't have an account?{' '}
+                        <span>{"Don't have an account? "}</span>
                         <Link href="/register" className="text-purple-600 font-medium hover:text-purple-500">
                             Register here
                         </Link>
