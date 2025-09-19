@@ -5,23 +5,75 @@ import axios from 'axios';
 
 const Home = () => {
     const [products, setProducts] = useState([]);
+    const [orders, setOrders] = useState([]);
+    const [stats, setStats] = useState({
+        totalSales: 0,
+        pendingOrders: 0,
+        lowStockItems: 0,
+        totalOrders: 0,
+    });
+    const [recentOrders, setRecentOrders] = useState([]);
     const [error, setError] = useState(null);
 
     // Fetch vendor's products
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchDashboardData = async () => {
             try {
                 const token = localStorage.getItem('accessToken');
                 if (!token) throw new Error('Please log in');
-                const response = await axios.get('http://127.0.0.1:8000/api/vendor/products/', {
+
+                // fetch products
+                const productsResponse = await axios.get('http://127.0.0.1:8000/api/vendor/products/', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                setProducts(response.data);
+                setProducts(productsResponse.data);
+
+               // Fetch orders
+                const ordersResponse = await axios.get('http://127.0.0.1:8000/api/vendor/orders/', {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                console.log('Fetched orders:', ordersResponse.data);
+                setOrders(ordersResponse.data);
+
+                // Calculate stats
+                const lowStockItems = productsResponse.data.filter(product => 
+                    product.status === 'Low Stock' || product.status === 'low stock'
+                ).length;
+
+                const totalSales = ordersResponse.data.reduce((total, order) => {
+                    return total + (parseFloat(order.price) * order.quantity);
+                }, 0);
+
+                const pendingOrders = ordersResponse.data.filter(order => 
+                    order.order_status?.toLowerCase() === 'pending'
+                ).length;
+
+                const uniqueOrderIds = [...new Set(ordersResponse.data.map(item => item.order_id))];
+                
+                // Get recent orders (last 5 unique orders)
+                const recentOrdersData = ordersResponse.data
+                    .filter((order, index, self) => 
+                        index === self.findIndex(o => o.order_id === order.order_id)
+                    )
+                    .sort((a, b) => new Date(b.order_date) - new Date(a.order_date))
+                    .slice(0, 5);
+
+                setStats({
+                    totalSales: totalSales,
+                    pendingOrders: pendingOrders,
+                    lowStockItems: lowStockItems,
+                    totalOrders: uniqueOrderIds.length,
+                });
+
+                setRecentOrders(recentOrdersData);
+
             } catch (err) {
-                setError(err.response?.data?.detail || err.message);
+                const errorMsg = err.response?.data?.detail || err.message;
+                console.error('Fetch error:', err);
+                setError(errorMsg);
             }
         };
-        fetchProducts();
+        fetchDashboardData();
     }, []);
 
     return (
@@ -36,29 +88,73 @@ const Home = () => {
                     <div className="the-grid grid grid-cols-[repeat(auto-fit,_minmax(220px,_1fr))] gap-5 mb-7">
                         <div className="card bg-white p-5 rounded-md shadow-xl">
                             <h3 className="mb-2.5 font-bold text-lg text-slate-700">Total Sales</h3>
-                            <p className="text-base text-neutral-600">₹3,340</p>
+                            <p className="text-base text-neutral-600">₹{stats.totalSales.toLocaleString('en-IN')}</p>
                         </div>
                         <div className="card bg-white p-5 rounded-md shadow-xl">
                             <h3 className="mb-2.5 font-bold text-lg text-slate-700">Pending Orders</h3>
-                            <p className="text-base text-neutral-600">6 Orders</p>
+                            <p className="text-base text-neutral-600">{stats.pendingOrders} Orders</p>
                         </div>
                         <div className="card bg-white p-5 rounded-md shadow-xl">
                             <h3 className="mb-2.5 font-bold text-lg text-slate-700">Low Stock Items</h3>
-                            <p className="text-base text-neutral-600">3 Products</p>
+                            <p className="text-base text-neutral-600">{stats.lowStockItems} Products</p>
                         </div>
+                        <div className="card bg-white p-5 rounded-md shadow-xl">
+                            <h3 className="mb-2.5 font-bold text-lg text-slate-700">Total Orders</h3>
+                            <p className="text-base text-neutral-600">
+                                {stats.totalOrders} Orders
+                            </p>
+                        </div>
+
                     </div>
 
-                    {/* Recent Orders (Placeholder) */}
+                    {/* Recent Orders */}
                     <div className="card card-recent bg-white p-5 rounded-md shadow-xl">
                         <h3 className="mb-2.5 font-bold text-lg text-slate-700">Recent Orders</h3>
-                        <ul>
-                            <li>[ORDER 1]</li>
-                            <li>[ORDER 2]</li>
-                            <li>[ORDER 3]</li>
-                            <li>[ORDER 4]</li>
-                        </ul>
+                        {recentOrders.length > 0 ? (
+                            <ul className="space-y-3">
+                                {recentOrders.map((order) => (
+                                    <li key={order.order_id} className="flex justify-between items-center p-3 border-b border-gray-100 hover:bg-gray-50 rounded-lg transition-colors duration-200">
+                                        <div className="flex-1">
+                                            <p className="font-medium text-slate-800">Order #{order.order_id}</p>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                {order.product_name} × {order.quantity}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {new Date(order.order_date).toLocaleDateString('en-IN', {
+                                                    day: '2-digit',
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                })}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-semibold text-slate-800">
+                                                ₹{(parseFloat(order.price) * order.quantity).toLocaleString('en-IN')}
+                                            </p>
+                                            <span className={`inline-block mt-1 text-xs px-2 py-1 rounded-full font-medium ${
+                                                order.order_status?.toLowerCase() === 'delivered' ? 'bg-green-100 text-green-700' :
+                                                order.order_status?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                order.order_status?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                order.order_status?.toLowerCase() === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                                                'bg-gray-100 text-gray-700'
+                                            }`}>
+                                                {order.order_status}
+                                            </span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="text-center py-8">
+                                <div className="text-gray-400 mb-2">
+                                    <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    </svg>
+                                </div>
+                                <p className="text-gray-500 text-sm">No recent orders found</p>
+                            </div>
+                        )}
                     </div>
-
                     {/* Product Management Section */}
                     <section className="brands-products mt-10">
                         <h2 className="m-5 text-white font-bold text-2xl">Your Products</h2>
