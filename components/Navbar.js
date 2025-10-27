@@ -24,18 +24,20 @@ const Navbar = () => {
   const getNavClass = (path) => `${baseClass} ${pathname === path ? 'bg-slate-600' : ''}`;
 
   return (
-    <nav className='w-56 bg-slate-700 flex flex-col sticky top-16 h-[91vh] overflow-y-auto'>
+    <nav className='w-56 bg-slate-700 flex flex-col justify-between sticky top-16 h-[90vh] overflow-y-auto'>
 
       {/* Regular NavLinks */}
-      <NavLink href='/home' className={getNavClass('/home')}>Dashboard</NavLink>
-      <NavLink href="/products" className={getNavClass('/products')}>Products</NavLink>
-      <NavLink href="/orders" className={getNavClass('/orders')}>Orders</NavLink>
-      <NavLink href="/analytics" className={getNavClass('/analytics')}>Analytics</NavLink>
-      <NavLink href="/promotions" className={getNavClass('/promotions')}>Promotions</NavLink>
-      <NavLink href="/settings" className={getNavClass('/settings')}>Settings</NavLink>
+      <div className='flex flex-col'>
+        <NavLink href='/home' className={getNavClass('/home')}>Dashboard</NavLink>
+        <NavLink href="/products" className={getNavClass('/products')}>Products</NavLink>
+        <NavLink href="/orders" className={getNavClass('/orders')}>Orders</NavLink>
+        <NavLink href="/analytics" className={getNavClass('/analytics')}>Analytics</NavLink>
+        <NavLink href="/promotions" className={getNavClass('/promotions')}>Promotions</NavLink>
+        <NavLink href="/settings" className={getNavClass('/settings')}>Settings</NavLink>
+      </div>
 
       {/* Auth Section at bottom */}
-      <div className="mt-auto">
+      <div className='py-5 text-xl font-semibold px-3'>
         {isLoggedIn ? (
           <button
             onClick={handleLogout}
@@ -44,9 +46,9 @@ const Navbar = () => {
             Logout
           </button>
         ) : (
-          <NavLink 
-            href="/login" 
-            className={getNavClass('/login') + ' hover:bg-green-600'}
+          <NavLink
+            href="/login"
+            className={getNavClass('/login') + ' hover:bg-green-600 rounded-2xl'}
           >
             Login
           </NavLink>
