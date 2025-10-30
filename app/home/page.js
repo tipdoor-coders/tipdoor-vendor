@@ -28,7 +28,7 @@ const Home = () => {
                 });
                 setProducts(productsResponse.data);
 
-               // Fetch orders
+                // Fetch orders
                 const ordersResponse = await axios.get('http://127.0.0.1:8000/api/vendor/orders/', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
@@ -36,7 +36,7 @@ const Home = () => {
                 setOrders(ordersResponse.data);
 
                 // Calculate stats
-                const lowStockItems = productsResponse.data.filter(product => 
+                const lowStockItems = productsResponse.data.filter(product =>
                     product.status === 'Low Stock' || product.status === 'low stock'
                 ).length;
 
@@ -44,15 +44,15 @@ const Home = () => {
                     return total + (parseFloat(order.price) * order.quantity);
                 }, 0);
 
-                const pendingOrders = ordersResponse.data.filter(order => 
+                const pendingOrders = ordersResponse.data.filter(order =>
                     order.order_status?.toLowerCase() === 'pending'
                 ).length;
 
                 const uniqueOrderIds = [...new Set(ordersResponse.data.map(item => item.order_id))];
-                
+
                 // Get recent orders (last 5 unique orders)
                 const recentOrdersData = ordersResponse.data
-                    .filter((order, index, self) => 
+                    .filter((order, index, self) =>
                         index === self.findIndex(o => o.order_id === order.order_id)
                     )
                     .sort((a, b) => new Date(b.order_date) - new Date(a.order_date))
@@ -131,13 +131,12 @@ const Home = () => {
                                             <p className="font-semibold text-slate-800">
                                                 ₹{(parseFloat(order.price) * order.quantity).toLocaleString('en-IN')}
                                             </p>
-                                            <span className={`inline-block mt-1 text-xs px-2 py-1 rounded-full font-medium ${
-                                                order.order_status?.toLowerCase() === 'delivered' ? 'bg-green-100 text-green-700' :
-                                                order.order_status?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                order.order_status?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                order.order_status?.toLowerCase() === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-gray-100 text-gray-700'
-                                            }`}>
+                                            <span className={`inline-block mt-1 text-xs px-2 py-1 rounded-full font-medium ${order.order_status?.toLowerCase() === 'delivered' ? 'bg-green-100 text-green-700' :
+                                                    order.order_status?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                        order.order_status?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                            order.order_status?.toLowerCase() === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                                                                'bg-gray-100 text-gray-700'
+                                                }`}>
                                                 {order.order_status}
                                             </span>
                                         </div>
@@ -185,11 +184,10 @@ const Home = () => {
                                             <td className="p-3 text-left text-white">{product.stock}</td>
                                             <td className="p-3 text-left text-white">
                                                 <span
-                                                    className={`status inline-block px-2 py-1 rounded text-sm ${
-                                                        product.status === 'In Stock'
+                                                    className={`status inline-block px-2 py-1 rounded text-sm ${product.status === 'In Stock'
                                                             ? 'bg-green-100 text-green-600'
                                                             : 'bg-red-100 text-red-500'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {product.status}
                                                 </span>
@@ -199,11 +197,14 @@ const Home = () => {
                                             </td>
                                             <td className="p-3 text-left text-white">
                                                 {product.image ? (
-                                                    <img
-                                                        src={product.image}
-                                                        alt={product.name}
-                                                        className="w-16 h-16 object-cover rounded"
-                                                    />
+                                                    <div className='relative w-16 h-16'>
+                                                        <Image
+                                                            src={product.image}
+                                                            alt={product.name}
+                                                            className="object-cover rounded"
+                                                            sizes="64px"
+                                                        />
+                                                    </div>
                                                 ) : (
                                                     '-'
                                                 )}
