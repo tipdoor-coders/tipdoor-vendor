@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
