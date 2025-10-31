@@ -3,6 +3,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { loginUser } from '@/lib/api';
 
 export default function Login() {
     const [formData, setFormData] = useState({
@@ -25,39 +26,24 @@ export default function Login() {
         e.preventDefault();
         setIsLoading(true);
         setErrors({});
-        
+
         try {
-            const response = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login/`, formData);
-            
-            // Store tokens based on the API response structure
-            if (response.data.access) {
-                localStorage.setItem('accessToken', response.data.access);
-                localStorage.setItem('refreshToken', response.data.refresh);
-                
-                // Show success message
-                alert('Login successful! Redirecting to dashboard...');
-                
-                // Redirect to dashboard
-                router.push('/home');
-            } else {
-                setErrors({ general: 'Login successful but no access token received.' });
-            }
-            
+            await loginUser(formData.username, formData.password);
+
+            // Show success message
+            alert('Login successful! Redirecting to dashboard...');
+
+            // Redirect to dashboard
+            router.push('/home');
+
         } catch (error) {
-            console.error('Login error:', error.response?.data);
-            if (error.response?.data) {
-                // Handle different error response formats
-                if (error.response.data.detail) {
-                    setErrors({ general: error.response.data.detail });
-                } else if (error.response.data.non_field_errors) {
-                    setErrors({ general: error.response.data.non_field_errors[0] });
-                } else {
-                    setErrors(error.response.data);
-                }
-            } else if (error.request) {
-                setErrors({ general: 'Network error. Please check your connection.' });
+            console.error('Login error:', error);
+
+            // Optional: handle the helper’s errors (thrown from api.js)
+            if (error.message === 'Login failed') {
+                setErrors({ general: 'Invalid username or password.' });
             } else {
-                setErrors({ general: 'Login failed. Please try again.' });
+                setErrors({ general: error.message || 'Login failed. Please try again.' });
             }
         } finally {
             setIsLoading(false);
@@ -71,7 +57,7 @@ export default function Login() {
                     <h1 className="text-2xl font-bold">Vendor Login</h1>
                     <p className="text-white/90 mt-1">Access your vendor account</p>
                 </div>
-                
+
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div className="space-y-4">
                         <div>
