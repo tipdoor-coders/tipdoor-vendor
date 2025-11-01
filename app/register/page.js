@@ -3,11 +3,13 @@ import { useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { registerUser } from '@/lib/api';
 
 export default function Register() {
     const [formData, setFormData] = useState({
         username: '',
         password: '',
+        confirm_password: '',
         email: '',
         name: '',
         phone_number: '',
@@ -30,34 +32,31 @@ export default function Register() {
         e.preventDefault();
         setIsLoading(true);
         setErrors({});
-        
+
+        // ✅ Client-side password confirmation check
+        if (formData.password !== formData.confirm_password) {
+            setErrors({ confirm_password: 'Passwords do not match !' });
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            const response = await axios.post('http://localhost:8000/api/vendors/auth/register/', formData);
-            
+            const { confirmPassword, ...submitData } = formData; // remove confirmPassword
+            const data = await registerUser(submitData);
+
             // Check if the API returns tokens directly upon registration
-            if (response.data.access) {
-                // Store tokens
-                localStorage.setItem('accessToken', response.data.access);
-                if (response.data.refresh) {
-                    localStorage.setItem('refreshToken', response.data.refresh);
-                }
-                
-                // Show success message and redirect to dashboard
-                alert('Registration successful! Redirecting to your dashboard...');
+            if (data.access) {
+                alert('Registration successful! Redirecting to dashboard...');
                 router.push('/dashboard');
             } else {
-                // Standard registration without immediate login
-                alert('Vendor registered successfully! Please login with your credentials.');
+                alert('Registration successful! Please log in.');
                 router.push('/login');
             }
 
         } catch (error) {
-            console.error('Registration error:', error.response?.data);
-            if (error.response?.data) {
-                setErrors(error.response.data);
-            } else {
-                setErrors({ general: 'Registration failed. Please try again.' });
-            }
+            console.error('Registration error:', error);
+            setErrors({ general: error.message });
+
         } finally {
             setIsLoading(false);
         }
@@ -70,7 +69,7 @@ export default function Register() {
                     <h1 className="text-2xl font-bold">Vendor Registration</h1>
                     <p className="text-white/90 mt-1">Create your vendor account</p>
                 </div>
-                
+
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div className="space-y-4">
                         <div>
@@ -113,6 +112,27 @@ export default function Register() {
                                 />
                             </div>
                             {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+                        </div>
+
+                        <div>
+                            <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 mb-1">
+                                Confirm Password
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i className="fas fa-lock text-gray-400"></i>
+                                </div>
+                                <input
+                                    type="password"
+                                    id="confirm_password"
+                                    name="confirm_password"
+                                    onChange={handleChange}
+                                    className={`block w-full pl-10 pr-3 py-2 border ${errors.confirm_password ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+                                    placeholder="Confirm your password"
+                                    required
+                                />
+                            </div>
+                            {errors.confirm_password && <p className="mt-1 text-sm text-red-600">{errors.confirm_password}</p>}
                         </div>
 
                         <div>
