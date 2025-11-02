@@ -2,6 +2,7 @@
 import Navbar from '@/components/Navbar';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Image from 'next/image';
 
 const Promotions = () => {
     const [promotions, setPromotions] = useState([]);
@@ -42,7 +43,7 @@ const Promotions = () => {
 
                 // Compute stats
                 const now = new Date();
-                const active = promoResponse.data.filter(p => 
+                const active = promoResponse.data.filter(p =>
                     p.is_active && new Date(p.start_date) <= now && new Date(p.end_date) >= now
                 ).length;
                 const upcoming = promoResponse.data.filter(p => new Date(p.start_date) > now).length;
@@ -109,7 +110,7 @@ const Promotions = () => {
             formData.applicable_products.forEach((id) => {
                 data.append(`applicable_products`, id);
             }
-        );
+            );
 
             let response;
             if (editingId) {
@@ -139,7 +140,7 @@ const Promotions = () => {
             });
             // Recompute stats
             const now = new Date();
-            const active = promotions.filter(p => 
+            const active = promotions.filter(p =>
                 p.is_active && new Date(p.start_date) <= now && new Date(p.end_date) >= now
             ).length;
             const upcoming = promotions.filter(p => new Date(p.start_date) > now).length;
@@ -182,7 +183,7 @@ const Promotions = () => {
             setPromotions(promotions.filter((p) => p.id !== id));
             // Recompute stats
             const now = new Date();
-            const active = promotions.filter(p => 
+            const active = promotions.filter(p =>
                 p.is_active && new Date(p.start_date) <= now && new Date(p.end_date) >= now
             ).length;
             const upcoming = promotions.filter(p => new Date(p.start_date) > now).length;
@@ -417,24 +418,26 @@ const Promotions = () => {
                                                 </td>
                                                 <td className="py-2 px-4 text-white">
                                                     <span
-                                                        className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                                                            status === 'Active' ? 'bg-green-100 text-green-700' :
+                                                        className={`inline-block px-2 py-1 rounded text-xs font-semibold ${status === 'Active' ? 'bg-green-100 text-green-700' :
                                                             status === 'Upcoming' ? 'bg-blue-100 text-blue-700' :
-                                                            status === 'Expired' ? 'bg-red-100 text-red-700' :
-                                                            'bg-gray-100 text-gray-700'
-                                                        }`}
+                                                                status === 'Expired' ? 'bg-red-100 text-red-700' :
+                                                                    'bg-gray-100 text-gray-700'
+                                                            }`}
                                                     >
                                                         {status}
                                                     </span>
                                                 </td>
                                                 <td className="py-2 px-4 text-white">
                                                     {promotion.banner_image ? (
-                                                        <img
-                                                            src={promotion.banner_image}
-                                                            alt={promotion.title}
-                                                            className="w-16 h-16 object-cover rounded"
-                                                            onError={() => console.error(`Failed to load image: ${promotion.banner_image}`)}
-                                                        />
+                                                        <div className='relative w-16 h-16'>
+                                                            <Image
+                                                                src={promotion.banner_image}
+                                                                alt={promotion.title}
+                                                                fill
+                                                                className="object-cover rounded"
+                                                                onError={() => console.error(`Failed to load image: ${promotion.banner_image}`)}
+                                                            />
+                                                        </div>
                                                     ) : (
                                                         '-'
                                                     )}
