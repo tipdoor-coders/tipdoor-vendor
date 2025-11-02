@@ -2,6 +2,7 @@
 import Navbar from '@/components/Navbar'
 import React, { useState, useEffect } from 'react'
 import axios from 'axios';
+import Image from 'next/image';
 
 const Products = () => {
     const [products, setProducts] = useState([]);
@@ -53,7 +54,7 @@ const Products = () => {
         try {
             const token = localStorage.getItem('accessToken');
             if (!token) throw new Error('Please log in');
-            
+
             const data = new FormData();
             for (const key in formData) {
                 if (formData[key] !== null) {
@@ -298,13 +299,12 @@ const Products = () => {
                                             <td className="p-3 text-left text-white">{product.stock}</td>
                                             <td className="p-3 text-left text-white">
                                                 <span
-                                                    className={`status inline-block px-2 py-1 rounded text-sm ${
-                                                        product.status === 'In Stock'
+                                                    className={`status inline-block px-2 py-1 rounded text-sm ${product.status === 'In Stock'
                                                             ? 'bg-green-100 text-green-600'
                                                             : product.status === 'Low Stock'
-                                                            ? 'bg-yellow-100 text-yellow-600'
-                                                            : 'bg-red-100 text-red-500'
-                                                    }`}
+                                                                ? 'bg-yellow-100 text-yellow-600'
+                                                                : 'bg-red-100 text-red-500'
+                                                        }`}
                                                 >
                                                     {product.status}
                                                 </span>
@@ -314,10 +314,12 @@ const Products = () => {
                                             </td>
                                             <td className="p-3 text-left text-white">
                                                 {product.image ? (
-                                                    <img
+                                                    <Image
                                                         src={product.image}
                                                         alt={product.name}
-                                                        className="w-16 h-16 object-cover rounded"
+                                                        width={64}
+                                                        height={64}
+                                                        className="object-cover rounded"
                                                     />
                                                 ) : (
                                                     '-'
@@ -338,9 +340,8 @@ const Products = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handlePublishToggle(product.id, !product.is_published)}
-                                                    className={`px-2.5 py-1.5 border-none rounded text-sm cursor-pointer ${
-                                                        product.is_published ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-500 hover:bg-green-600'
-                                                    }`}
+                                                    className={`px-2.5 py-1.5 border-none rounded text-sm cursor-pointer ${product.is_published ? 'bg-gray-500 hover:bg-gray-600' : 'bg-green-500 hover:bg-green-600'
+                                                        }`}
                                                 >
                                                     {product.is_published ? 'Unpublish' : 'Publish'}
                                                 </button>
