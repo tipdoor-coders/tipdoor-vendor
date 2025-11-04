@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { fetchWithAuth } from '@/lib/api';
 
 const Home = () => {
     const [products, setProducts] = useState([]);
@@ -20,19 +20,12 @@ const Home = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const token = localStorage.getItem('accessToken');
-                if (!token) throw new Error('Please log in');
-
                 // fetch products
-                const productsResponse = await axios.get('http://127.0.0.1:8000/api/vendor/products/', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const productsResponse = await fetchWithAuth('vendor/products/');
                 setProducts(productsResponse.data);
 
                 // Fetch orders
-                const ordersResponse = await axios.get('http://127.0.0.1:8000/api/vendor/orders/', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const ordersResponse = await fetchWithAuth('vendor/orders/');
                 console.log('Fetched orders:', ordersResponse.data);
                 setOrders(ordersResponse.data);
 
@@ -69,9 +62,8 @@ const Home = () => {
                 setRecentOrders(recentOrdersData);
 
             } catch (err) {
-                const errorMsg = err.response?.data?.detail || err.message;
                 console.error('Fetch error:', err);
-                setError(errorMsg);
+                setError(err.message || 'Something went wrong');
             }
         };
         fetchDashboardData();
@@ -133,10 +125,10 @@ const Home = () => {
                                                 ₹{(parseFloat(order.price) * order.quantity).toLocaleString('en-IN')}
                                             </p>
                                             <span className={`inline-block mt-1 text-xs px-2 py-1 rounded-full font-medium ${order.order_status?.toLowerCase() === 'delivered' ? 'bg-green-100 text-green-700' :
-                                                    order.order_status?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                        order.order_status?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                            order.order_status?.toLowerCase() === 'shipped' ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-gray-100 text-gray-700'
+                                                order.order_status?.toLowerCase() === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                    order.order_status?.toLowerCase() === 'cancelled' ? 'bg-red-100 text-red-700' :
+                                                        order.order_status?.toLowerCase() === 'shipped' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-gray-100 text-gray-700'
                                                 }`}>
                                                 {order.order_status}
                                             </span>
@@ -186,8 +178,8 @@ const Home = () => {
                                             <td className="p-3 text-left text-white">
                                                 <span
                                                     className={`status inline-block px-2 py-1 rounded text-sm ${product.status === 'In Stock'
-                                                            ? 'bg-green-100 text-green-600'
-                                                            : 'bg-red-100 text-red-500'
+                                                        ? 'bg-green-100 text-green-600'
+                                                        : 'bg-red-100 text-red-500'
                                                         }`}
                                                 >
                                                     {product.status}

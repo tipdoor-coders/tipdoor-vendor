@@ -3,6 +3,8 @@ import Navbar from '@/components/Navbar'
 import React, { useState, useEffect } from 'react'
 import axios from 'axios';
 import Image from 'next/image';
+import { fetchWithAuth } from '@/lib/api';
+import { headers } from 'next/headers';
 
 const Products = () => {
     const [products, setProducts] = useState([]);
@@ -21,14 +23,11 @@ const Products = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const token = localStorage.getItem('accessToken');
-                if (!token) throw new Error('Please log in');
-                const response = await axios.get('http://127.0.0.1:8000/api/vendor/products/', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const response = await fetchWithAuth('vendor/products/');
                 setProducts(response.data);
             } catch (err) {
-                setError(err.response?.data?.detail || err.message);
+                console.error(err);
+                setError(err.message || 'Failed to fetch products');
             }
         };
         fetchProducts();
@@ -52,9 +51,6 @@ const Products = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('accessToken');
-            if (!token) throw new Error('Please log in');
-
             const data = new FormData();
             for (const key in formData) {
                 if (formData[key] !== null) {
@@ -64,28 +60,27 @@ const Products = () => {
 
             if (editingId) {
                 // Update product
-                const response = await axios.put(`http://127.0.0.1:8000/api/products/${editingId}`, data, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data',
-                    },
+                const response = await fetchWithAuth(`products/${editingId}`, {
+                    method: 'PUT',
+                    body: data,
+                    headers: { Authorization: `Bearer ${localStorage.getItem('access')}` },
                 });
-                setProducts(products.map((p) => (p.id === editingId ? response.data : p)));
+                setProducts(products.map((p) => (p.id === editingId ? response : p)));
                 setEditingId(null);
             } else {
                 // Create product
-                const response = await axios.post('http://127.0.0.1:8000/api/vendor/products/', data, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data',
-                    },
+                const response = await fetchWithAuth('vendor/products/', {
+                    method: 'POST',
+                    body: data,
+                    headers: { Authorization: `Bearer ${localStorage.getItem('access')}` },
                 });
-                setProducts([...products, response.data]);
+                setProducts([...products, response]);
             }
             setFormData({ name: '', sku: '', price: '', stock: '', image: null, is_published: true });
             setError(null);
         } catch (err) {
-            setError(err.response?.data || err.message);
+            console.error('Submit error: ', err)
+            setError(err.message || 'Failed to save product');
         }
     };
 
@@ -105,33 +100,31 @@ const Products = () => {
     // Handle delete button
     const handleDelete = async (id) => {
         try {
-            const token = localStorage.getItem('accessToken');
-            if (!token) throw new Error('Please log in');
-            await axios.delete(`http://127.0.0.1:8000/api/products/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
+            await fetchWithAuth(`products/${id}`, {
+                method: 'DELETE',
             });
             setProducts(products.filter((p) => p.id !== id));
             setError(null);
         } catch (err) {
-            setError(err.response?.data?.detail || err.message);
+            console.error('Delete error:', err);
+            setError(err.message || 'Failed to delete product');
         }
     };
 
     // Handle publish/unpublish
     const handlePublishToggle = async (id, publish) => {
         try {
-            const token = localStorage.getItem('accessToken');
-            if (!token) throw new Error('Please log in');
             const endpoint = publish
-                ? `http://127.0.0.1:8000/api/vendor/products/${id}/publish/`
-                : `http://127.0.0.1:8000/api/vendor/products/${id}/unpublish/`;
-            await axios.post(endpoint, {}, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+                ? `vendor/products/${id}/publish/`
+                : `vendor/products/${id}/unpublish/`;
+
+            await fetchWithAuth(endpoint, { method: 'POST' });
+
             setProducts(products.map((p) => (p.id === id ? { ...p, is_published: publish } : p)));
             setError(null);
         } catch (err) {
-            setError(err.response?.data?.detail || err.message);
+            console.error('Publish toggle error:', err);
+            setError(err.message || 'Failed to update publish status');
         }
     };
 
@@ -300,10 +293,10 @@ const Products = () => {
                                             <td className="p-3 text-left text-white">
                                                 <span
                                                     className={`status inline-block px-2 py-1 rounded text-sm ${product.status === 'In Stock'
-                                                            ? 'bg-green-100 text-green-600'
-                                                            : product.status === 'Low Stock'
-                                                                ? 'bg-yellow-100 text-yellow-600'
-                                                                : 'bg-red-100 text-red-500'
+                                                        ? 'bg-green-100 text-green-600'
+                                                        : product.status === 'Low Stock'
+                                                            ? 'bg-yellow-100 text-yellow-600'
+                                                            : 'bg-red-100 text-red-500'
                                                         }`}
                                                 >
                                                     {product.status}
