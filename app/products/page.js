@@ -1,10 +1,8 @@
 'use client';
 import Navbar from '@/components/Navbar'
 import React, { useState, useEffect } from 'react'
-import axios from 'axios';
 import Image from 'next/image';
 import { fetchWithAuth } from '@/lib/api';
-import { headers } from 'next/headers';
 
 const Products = () => {
     const [products, setProducts] = useState([]);
