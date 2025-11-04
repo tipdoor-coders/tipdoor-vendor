@@ -139,19 +139,19 @@ const Products = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
                         <div className="card bg-white rounded-lg shadow p-6 flex flex-col items-center">
                             <h3 className="text-lg font-semibold mb-2">Total Products</h3>
-                            <p className="text-2xl font-bold text-blue-600">48</p>
+                            <p className="text-2xl font-bold text-blue-600">{products.length}</p>
                         </div>
                         <div className="card bg-white rounded-lg shadow p-6 flex flex-col items-center">
                             <h3 className="text-lg font-semibold mb-2">In Stock</h3>
-                            <p className="text-2xl font-bold text-green-600">40</p>
+                            <p className="text-2xl font-bold text-green-600">{products.filter(p => p.stock > 0).length}</p>
                         </div>
                         <div className="card bg-white rounded-lg shadow p-6 flex flex-col items-center">
                             <h3 className="text-lg font-semibold mb-2">Low Stock</h3>
-                            <p className="text-2xl font-bold text-yellow-600">5</p>
+                            <p className="text-2xl font-bold text-yellow-600">{products.filter(p => p.stock > 0 && p.stock <= 5).length}</p>
                         </div>
                         <div className="card bg-white rounded-lg shadow p-6 flex flex-col items-center">
                             <h3 className="text-lg font-semibold mb-2">Out of Stock</h3>
-                            <p className="text-2xl font-bold text-red-600">3</p>
+                            <p className="text-2xl font-bold text-red-600">{products.filter(p => Products.stock === 0).length}</p>
                         </div>
                     </div>
 
