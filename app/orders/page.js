@@ -1,7 +1,7 @@
 'use client';
 import Navbar from '@/components/Navbar';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { fetchWithAuth } from '@/lib/api';
 
 const Orders = () => {
     const [orderItems, setOrderItems] = useState([]);
@@ -17,19 +17,15 @@ const Orders = () => {
     useEffect(() => {
         const fetchOrderItems = async () => {
             try {
-                const token = localStorage.getItem('accessToken');
-                if (!token) throw new Error('Please log in');
-                const response = await axios.get('http://localhost:8000/api/vendor/orders/', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                console.log('Fetched order items:', response.data);
-                setOrderItems(response.data);
+                const response = await fetchWithAuth('vendor/orders/');
+                console.log('Fetched order items:', response);
+                setOrderItems(response);
 
                 // Calculate stats
-                const uniqueOrderIds = [...new Set(response.data.map(item => item.order_id))];
-                const pending = response.data.filter(item => item.order_status === 'pending').length;
-                const shipped = response.data.filter(item => item.order_status === 'shipped').length;
-                const cancelled = response.data.filter(item => item.order_status === 'cancelled').length;
+                const uniqueOrderIds = [...new Set(response.map(item => item.order_id))];
+                const pending = response.filter(item => item.order_status === 'pending').length;
+                const shipped = response.filter(item => item.order_status === 'shipped').length;
+                const cancelled = response.filter(item => item.order_status === 'cancelled').length;
                 setStats({
                     totalOrders: uniqueOrderIds.length,
                     pendingOrders: pending,
@@ -37,9 +33,8 @@ const Orders = () => {
                     cancelledOrders: cancelled,
                 });
             } catch (err) {
-                const errorMsg = err.response?.data?.detail || err.message;
-                console.error('Fetch error:', err.response?.data);
-                setError(errorMsg);
+                console.error('Fetch error:', err);
+                setError(err.message === 'Session expired' ? 'Your session has expired. Please log in again.' : err.message);
             }
         };
         fetchOrderItems();
@@ -48,31 +43,34 @@ const Orders = () => {
     // Handle cancel order
     const handleCancel = async (orderId) => {
         try {
-            const token = localStorage.getItem('accessToken');
-            if (!token) throw new Error('Please log in');
             console.log(`Sending POST to /api/shop/vendor/orders/${orderId}/cancel/`);
-            await axios.post(`http://localhost:8000/api/vendor/orders/${orderId}/cancel/`, {}, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setOrderItems(orderItems.map(item =>
-                item.order_id === orderId ? { ...item, order_status: 'cancelled' } : item
-            ));
+            await fetchWithAuth(`vendor/orders/${orderId}/cancel/`, { method: 'POST' });
+
+            // Update local state
+            setOrderItems(prevItems =>
+                prevItems.map(item =>
+                    item.order_id === orderId ? { ...item, order_status: 'cancelled' } : item
+                )
+            );
+
+            // Recalculate stats
             setStats(prev => ({
                 ...prev,
                 pendingOrders: prev.pendingOrders - orderItems.filter(item => item.order_id === orderId && item.order_status === 'pending').length,
                 cancelledOrders: prev.cancelledOrders + orderItems.filter(item => item.order_id === orderId).length,
             }));
+
             setError(null);
         } catch (err) {
-            console.error('Cancel error:', err.response?.data);
-            setError(err.response?.data?.detail || err.message);
+            console.error('Cancel error:', err);
+            setError(err.message === 'Session expired' ? 'Your session has expired. Please log in again.' : err.message);
         }
     };
 
     // Handle view order details
     const handleView = (orderId) => {
         const items = orderItems.filter(item => item.order_id === orderId);
-        const details = items.map(item => 
+        const details = items.map(item =>
             `Product: ${item.product_name}, SKU: ${item.product_sku}, Quantity: ${item.quantity}, Price: ₹${item.price}`
         ).join('\n');
         alert(`Order #${orderId}\nCustomer: ${items[0]?.customer_name || 'Unknown'}\nDate: ${items[0] ? new Date(items[0].order_date).toLocaleDateString() : '-'}\nStatus: ${items[0]?.order_status || '-'}\n\nItems:\n${details}`);
@@ -84,8 +82,8 @@ const Orders = () => {
     for (const item of orderItems) {
         if (!seenOrderIds.has(item.order_id)) {
             seenOrderIds.add(item.order_id);
-            const itemsForOrder  = orderItems.filter(i => i.order_id === item.order_id);
-            const total = itemsForOrder .reduce((sum, i) => sum + (i.price * i.quantity), 0);
+            const itemsForOrder = orderItems.filter(i => i.order_id === item.order_id);
+            const total = itemsForOrder.reduce((sum, i) => sum + (i.price * i.quantity), 0);
             groupedOrders.push({
                 order_id: item.order_id,
                 customer_name: item.customer_name,
@@ -148,13 +146,12 @@ const Orders = () => {
                                             <td className="py-2 px-4 text-white">{new Date(order.order_date).toLocaleDateString()}</td>
                                             <td className="py-2 px-4 text-white">
                                                 <span
-                                                    className={`status inline-block px-2 py-1 rounded text-xs font-semibold ${
-                                                        order.order_status === 'shipped'
-                                                            ? 'bg-green-100 text-green-700'
-                                                            : order.order_status === 'pending'
+                                                    className={`status inline-block px-2 py-1 rounded text-xs font-semibold ${order.order_status === 'shipped'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : order.order_status === 'pending'
                                                             ? 'bg-yellow-100 text-yellow-700'
                                                             : 'bg-gray-200 text-gray-700'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {order.order_status.charAt(0).toUpperCase() + order.order_status.slice(1)}
                                                 </span>
