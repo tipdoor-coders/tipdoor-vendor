@@ -1,5 +1,6 @@
 import React from 'react'
 import NavLink from 'next/link'
+import { FaFacebook, FaTwitter, FaInstagram, FaYoutube } from 'react-icons/fa';
 
 const Footer = () => {
     return (
@@ -31,10 +32,10 @@ const Footer = () => {
                 <div className='footer-section flex-1 min-w-[200px] mr-5'>
                     <h3 className='text-2xl mb-3.5 text-[#fff]'>Follow Us</h3>
                     <ul className='list-none space-y-2.5 social-media flex gap-3.5'>
-                        <li><NavLink href='#' className='facebook text-[#bbb] no-underline text-[1.2rem] transition-colors duration-300 ease-in-out hover:text-[#fff]'>Facebook</NavLink></li>
-                        <li><NavLink href='#' className='twitter text-[#bbb] no-underline text-[1.2rem] transition-colors duration-300 ease-in-out hover:text-[#fff]'>Twitter</NavLink></li>
-                        <li><NavLink href='#' className='instagram text-[#bbb] no-underline text-[1.2rem] transition-colors duration-300 ease-in-out hover:text-[#fff]'>Instagram</NavLink></li>
-                        <li><NavLink href='#' className='youtube text-[#bbb] no-underline text-[1.2rem] transition-colors duration-300 ease-in-out hover:text-[#fff]'>YouTube</NavLink></li>
+                        <li><NavLink href='#' className='facebook text-[#bbb] no-underline text-[1.2rem] transition-colors duration-300 ease-in-out hover:text-[#fff]'><FaFacebook /></NavLink></li>
+                        <li><NavLink href='#' className='twitter text-[#bbb] no-underline text-[1.2rem] transition-colors duration-300 ease-in-out hover:text-[#fff]'><FaTwitter /></NavLink></li>
+                        <li><NavLink href='#' className='instagram text-[#bbb] no-underline text-[1.2rem] transition-colors duration-300 ease-in-out hover:text-[#fff]'><FaInstagram /></NavLink></li>
+                        <li><NavLink href='#' className='youtube text-[#bbb] no-underline text-[1.2rem] transition-colors duration-300 ease-in-out hover:text-[#fff]'><FaYoutube /></NavLink></li>
                     </ul>
                 </div>
             </div>
