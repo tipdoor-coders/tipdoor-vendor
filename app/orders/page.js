@@ -100,7 +100,7 @@ const Orders = () => {
                 <Navbar />
                 <main className='flex-grow p-8 text-gray-800'>
                     <h2 className="text-2xl text-white font-semibold mb-6">Order Summary</h2>
-                    {error && <p className="text-red-500 mb-4">{JSON.stringify(error)}</p>}
+                    {error && <p className="text-red-500 mb-4 bg-amber-50 p-2 rounded-md">{JSON.stringify(error)}</p>}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
                         <div className="card bg-white rounded-lg shadow p-6 flex flex-col items-center">

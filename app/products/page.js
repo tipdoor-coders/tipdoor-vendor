@@ -164,7 +164,7 @@ const Products = () => {
                             <h3 className="mb-2.5 font-bold text-lg text-slate-700">
                                 {editingId ? 'Edit Product' : 'Add New Product'}
                             </h3>
-                            {error && <p className="text-red-500 mb-4">{JSON.stringify(error)}</p>}
+                            {error && <p className="text-red-500 mb-4 bg-amber-100 p-2 rounded-md">{JSON.stringify(error)}</p>}
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Product Name</label>
