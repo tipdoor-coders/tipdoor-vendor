@@ -3,6 +3,7 @@ import Navbar from '@/components/Navbar';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Image from 'next/image';
+import { fetchWithAuth } from '@/lib/api';
 
 const Promotions = () => {
     const [promotions, setPromotions] = useState([]);
@@ -31,35 +32,30 @@ const Promotions = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem('accessToken');
-                if (!token) throw new Error('Please log in');
-
                 // Fetch promotions
-                const promoResponse = await axios.get('http://127.0.0.1:8000/api/vendor/promotions/', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                console.log('Fetched promotions:', promoResponse.data);
-                setPromotions(promoResponse.data);
+                const promoResponse = await fetchWithAuth('vendor/promotions/');
+                console.log('Fetched promotions:', promoResponse);
+                setPromotions(promoResponse);
 
                 // Compute stats
                 const now = new Date();
-                const active = promoResponse.data.filter(p =>
-                    p.is_active && new Date(p.start_date) <= now && new Date(p.end_date) >= now
+                const active = promoResponse.filter(
+                    (p) =>
+                        p.is_active &&
+                        new Date(p.start_date) <= now &&
+                        new Date(p.end_date) >= now
                 ).length;
-                const upcoming = promoResponse.data.filter(p => new Date(p.start_date) > now).length;
+                const upcoming = promoResponse.filter(p => new Date(p.start_date) > now).length;
                 const expired = promoResponse.data.filter(p => new Date(p.end_date) < now).length;
                 setStats({ active, upcoming, expired });
 
                 // Fetch vendor's products
-                const productResponse = await axios.get('http://127.0.0.1:8000/api/vendor/products/', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                console.log('Fetched products:', productResponse.data);
-                setProducts(productResponse.data);
+                const productResponse = await fetchWithAuth('vendor/products/');
+                console.log('Fetched products:', productResponse);
+                setProducts(productResponse);
             } catch (err) {
-                const errorMsg = err.response?.data?.detail || err.message;
-                console.error('Fetch error:', err.response?.data);
-                setError(errorMsg);
+                console.error("Fetch error:", err);
+                setError(err.message);
             }
         };
         fetchData();
@@ -92,9 +88,6 @@ const Promotions = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('accessToken');
-            if (!token) throw new Error('Please log in');
-
             const data = new FormData();
             data.append('title', formData.title);
             data.append('description', formData.description);
@@ -112,32 +105,29 @@ const Promotions = () => {
             }
             );
 
-            let response;
+            const endpoint = editingId
+                ? `vendor/promotions/${editingId}/`
+                : "vendor/promotions/";
+            const method = editingId ? "PUT" : "POST";
+
+            const response = await fetchWithAuth(endpoint, { method, body: data });
+
             if (editingId) {
                 console.log(`Sending PUT to /api/vendor/promotions/${editingId}/`);
-                response = await axios.put(`http://127.0.0.1:8000/api/vendor/promotions/${editingId}/`, data, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                setPromotions(promotions.map((p) => (p.id === editingId ? response.data : p)));
+                setPromotions(promotions.map((p) => (p.id === editingId ? response : p)));
                 setEditingId(null);
             } else {
                 console.log('Sending POST to /api/vendor/promotions/');
-                response = await axios.post('http://127.0.0.1:8000/api/vendor/promotions/', data, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data',
-                    },
-                });
-                setPromotions([...promotions, response.data]);
+                setPromotions([...promotions, response]);
             }
+
+            // Reset form
             setFormData({
                 title: '', description: '', start_date: '', end_date: '',
                 promo_code: '', discount_type: 'percentage', discount_value: '',
                 applicable_products: [], banner_image: null, is_active: true
             });
+
             // Recompute stats
             const now = new Date();
             const active = promotions.filter(p =>
@@ -146,11 +136,11 @@ const Promotions = () => {
             const upcoming = promotions.filter(p => new Date(p.start_date) > now).length;
             const expired = promotions.filter(p => new Date(p.end_date) < now).length;
             setStats({ active, upcoming, expired });
+
             setError(null);
         } catch (err) {
-            const errorMsg = err.response?.data || err.message;
-            console.error('Form submission error:', errorMsg);
-            setError(errorMsg);
+            console.error("Form submission error:", err);
+            setError(err.message);
         }
     };
 
@@ -174,13 +164,12 @@ const Promotions = () => {
     // Handle delete button
     const handleDelete = async (id) => {
         try {
-            const token = localStorage.getItem('accessToken');
-            if (!token) throw new Error('Please log in');
             console.log(`Sending DELETE to /api/vendor/promotions/${id}/`);
-            await axios.delete(`http://127.0.0.1:8000/api/vendor/promotions/${id}/`, {
+            await fetchWithAuth(`vendor/promotions/${id}/`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             setPromotions(promotions.filter((p) => p.id !== id));
+
             // Recompute stats
             const now = new Date();
             const active = promotions.filter(p =>
@@ -191,8 +180,8 @@ const Promotions = () => {
             setStats({ active, upcoming, expired });
             setError(null);
         } catch (err) {
-            console.error('Delete error:', err.response?.data);
-            setError(err.response?.data?.detail || err.message);
+            console.error("Delete error:", err);
+            setError(err.message);
         }
     };
 
