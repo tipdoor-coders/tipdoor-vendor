@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import Navbar from '@/components/Navbar'
+import { fetchWithAuth } from '@/lib/api'
 
 const Settings = () => {
     const [userData, setUserData] = useState({
@@ -16,22 +17,14 @@ const Settings = () => {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const token = localStorage.getItem('accessToken')
-                if (!token) throw new Error('Please log in')
-
-                const response = await axios.get('http://127.0.0.1:8000/api/user/', {
-                    headers: { 
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                })
+                const response = await fetchWithAuth('user/')
                 
                 setUserData({
-                    username: response.data.username,
-                    email: response.data.email
+                    username: response.username,
+                    email: response.email
                 })
             } catch (err) {
-                setError(err.response?.data?.detail || err.message)
+                setError(err.message || 'Failed to fetch user data');
             } finally {
                 setLoading(false)
             }
@@ -54,23 +47,18 @@ const Settings = () => {
         setSuccessMessage('')
 
         try {
-            const token = localStorage.getItem('accessToken')
-            if (!token) throw new Error('Please log in')
-
-            const response = await axios.put('http://127.0.0.1:8000/api/user/', userData, {
-                headers: { 
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
+            const response = await fetchWithAuth('user/', {
+                method: 'PUT',
+                body: JSON.stringify(userData)
+            });
 
             setSuccessMessage('Profile updated successfully!')
             setUserData({
-                username: response.data.username,
-                email: response.data.email
+                username: response.username,
+                email: response.email
             })
         } catch (err) {
-            setError(err.response?.data?.detail || err.message)
+            setError(err.message || 'Failed to update profile')
         }
     }
 
