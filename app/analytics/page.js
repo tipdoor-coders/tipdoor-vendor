@@ -1,9 +1,9 @@
 'use client';
 import Navbar from '@/components/Navbar';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Tooltip, Legend } from 'chart.js';
+import { fetchWithAuth } from '@/lib/api';
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Tooltip, Legend);
@@ -26,18 +26,14 @@ const Analytics = () => {
     useEffect(() => {
         const fetchOrderItems = async () => {
             try {
-                const token = localStorage.getItem('accessToken');
-                if (!token) throw new Error('Please log in');
-                const response = await axios.get('http://127.0.0.1:8000/api/vendor/orders/', {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                console.log('Fetched order items:', response.data);
-                setOrderItems(response.data);
+                const response = await fetchWithAuth('vendor/orders/');
+                console.log('Fetched order items:', response);
+                setOrderItems(response);
 
                 // Compute stats
-                const totalSales = response.data.reduce((sum, item) => sum + item.price * item.quantity, 0);
-                const uniqueOrderIds = [...new Set(response.data.map(item => item.order_id))];
-                const uniqueCustomerIds = [...new Set(response.data.map(item => item.order_id))]; // Assuming order_id is unique per customer order
+                const totalSales = response.reduce((sum, item) => sum + item.price * item.quantity, 0);
+                const uniqueOrderIds = [...new Set(response.map(item => item.order_id))];
+                const uniqueCustomerIds = [...new Set(response.map(item => item.order_id))]; // Assuming order_id is unique per customer order
                 setStats({
                     totalSales,
                     totalOrders: uniqueOrderIds.length,
@@ -45,7 +41,7 @@ const Analytics = () => {
                 });
 
                 // Top Selling Products (Bar)
-                const productQuantities = response.data.reduce((acc, item) => {
+                const productQuantities = response.reduce((acc, item) => {
                     acc[item.product_name] = (acc[item.product_name] || 0) + item.quantity;
                     return acc;
                 }, {});
@@ -64,7 +60,7 @@ const Analytics = () => {
                 });
 
                 // Sales Trend Over Days (Line)
-                const salesByDate = response.data.reduce((acc, item) => {
+                const salesByDate = response.reduce((acc, item) => {
                     const date = new Date(item.order_date).toLocaleDateString();
                     acc[date] = (acc[date] || 0) + (item.price * item.quantity);
                     return acc;
@@ -82,7 +78,7 @@ const Analytics = () => {
                 });
 
                 // Status Breakdown (Pie)
-                const statusCounts = response.data.reduce((acc, item) => {
+                const statusCounts = response.reduce((acc, item) => {
                     acc[item.order_status] = (acc[item.order_status] || 0) + 1;
                     return acc;
                 }, {});
@@ -105,9 +101,8 @@ const Analytics = () => {
                     }],
                 });
             } catch (err) {
-                const errorMsg = err.response?.data?.detail || err.message;
-                console.error('Fetch error:', err.response?.data);
-                setError(errorMsg);
+                console.error('Fetch error:', err);
+                setError(err.message || 'Failed to load order data.');
             }
         };
         fetchOrderItems();
