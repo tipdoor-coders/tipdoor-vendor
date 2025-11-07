@@ -1,6 +1,5 @@
 "use client"
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
 import Navbar from '@/components/Navbar'
 import { fetchWithAuth } from '@/lib/api'
 
@@ -18,7 +17,7 @@ const Settings = () => {
         const fetchUserData = async () => {
             try {
                 const response = await fetchWithAuth('user/')
-                
+
                 setUserData({
                     username: response.username,
                     email: response.email
