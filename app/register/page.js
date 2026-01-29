@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { registerUser } from '@/lib/api';
@@ -42,7 +41,7 @@ export default function Register() {
 
         try {
             const { confirmPassword, ...submitData } = formData; // remove confirmPassword
-            const data = await registerUser(submitData);
+            const data = await registerUser(submitData.username, submitData.password, submitData.email, submitData.name);
 
             // Check if the API returns tokens directly upon registration
             if (data.access) {
