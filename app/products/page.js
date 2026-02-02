@@ -22,7 +22,7 @@ const Products = () => {
         const fetchProducts = async () => {
             try {
                 const response = await fetchWithAuth('vendor/products/');
-                setProducts(response.data);
+                setProducts(response);
             } catch (err) {
                 console.error(err);
                 setError(err.message || 'Failed to fetch products');
@@ -58,7 +58,7 @@ const Products = () => {
 
             if (editingId) {
                 // Update product
-                const response = await fetchWithAuth(`products/${editingId}`, {
+                const response = await fetchWithAuth(`vendor/products/${editingId}/`, {
                     method: 'PUT',
                     body: data,
                     headers: { Authorization: `Bearer ${localStorage.getItem('access')}` },
