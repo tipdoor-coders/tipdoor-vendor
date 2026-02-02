@@ -22,30 +22,29 @@ const Home = () => {
             try {
                 // fetch products
                 const productsResponse = await fetchWithAuth('vendor/products/');
-                setProducts(productsResponse.data);
+                setProducts(productsResponse);
 
                 // Fetch orders
                 const ordersResponse = await fetchWithAuth('vendor/orders/');
-                console.log('Fetched orders:', ordersResponse.data);
-                setOrders(ordersResponse.data);
+                setOrders(ordersResponse);
 
                 // Calculate stats
-                const lowStockItems = productsResponse.data.filter(product =>
+                const lowStockItems = productsResponse.filter(product =>
                     product.status === 'Low Stock' || product.status === 'low stock'
                 ).length;
 
-                const totalSales = ordersResponse.data.reduce((total, order) => {
+                const totalSales = ordersResponse.reduce((total, order) => {
                     return total + (parseFloat(order.price) * order.quantity);
                 }, 0);
 
-                const pendingOrders = ordersResponse.data.filter(order =>
+                const pendingOrders = ordersResponse.filter(order =>
                     order.order_status?.toLowerCase() === 'pending'
                 ).length;
 
-                const uniqueOrderIds = [...new Set(ordersResponse.data.map(item => item.order_id))];
+                const uniqueOrderIds = [...new Set(ordersResponse.map(item => item.order_id))];
 
                 // Get recent orders (last 5 unique orders)
-                const recentOrdersData = ordersResponse.data
+                const recentOrdersData = ordersResponse
                     .filter((order, index, self) =>
                         index === self.findIndex(o => o.order_id === order.order_id)
                     )
@@ -196,6 +195,7 @@ const Home = () => {
                                                             alt={product.name}
                                                             className="object-cover rounded"
                                                             sizes="64px"
+                                                            fill
                                                         />
                                                     </div>
                                                 ) : (
