@@ -46,7 +46,7 @@ const Promotions = () => {
                         new Date(p.end_date) >= now
                 ).length;
                 const upcoming = promoResponse.filter(p => new Date(p.start_date) > now).length;
-                const expired = promoResponse.data.filter(p => new Date(p.end_date) < now).length;
+                const expired = promoResponse.filter(p => new Date(p.end_date) < now).length;
                 setStats({ active, upcoming, expired });
 
                 // Fetch vendor's products
@@ -91,8 +91,8 @@ const Promotions = () => {
             const data = new FormData();
             data.append('title', formData.title);
             data.append('description', formData.description);
-            data.append('start_date', formData.start_date);
-            data.append('end_date', formData.end_date);
+            data.append('start_date', new Date(formData.start_date).toISOString());
+            data.append('end_date', new Date(formData.end_date).toISOString());
             data.append('promo_code', formData.promo_code);
             data.append('discount_type', formData.discount_type);
             data.append('discount_value', formData.discount_value);
